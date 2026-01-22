@@ -1,4 +1,4 @@
-# 🚀 CI/CD Deployment of a 3-Tier Application to Azure Kubernetes with GitHub Actions, Argo CD, and Terraform
+# 🚀 CI/CD Deployment of a 3-Tier Application to Azure Kubernetes with GitHub Actions, Helm and Terraform
 
 This project demonstrates a complete DevOps and GitOps pipeline that automates the build, deployment, and delivery of a cloud-native 3-tier application to Azure Kubernetes Service (AKS). It leverages industry-standard tools like GitHub Actions, Argo CD, Terraform, Helm, and Docker — integrated to deliver an end-to-end, production-grade workflow.
 
