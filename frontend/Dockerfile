@@ -1,29 +1,15 @@
-# ===========================
-# STAGE 1 — Build Application
-# ===========================
-FROM maven:3.9.6-eclipse-temurin-21 AS build
+# Stage 1 — Build React App
+FROM node:18 AS build
 WORKDIR /app
 
-# Copy pom.xml first and download dependencies
-COPY pom.xml .
-RUN mvn -q dependency:go-offline
+COPY package*.json ./
+RUN npm install
 
-# Copy source code
-COPY src ./src
+COPY . .
+RUN npm run build
 
-# Build the application
-RUN mvn clean package -DskipTests
-
-
-# ===========================
-# STAGE 2 — Run Application
-# ===========================
-FROM eclipse-temurin:21-jdk
-WORKDIR /app
-
-# Copy the built jar file
-COPY --from=build /app/target/*.jar app.jar
-
-EXPOSE 8080
-
-CMD ["java", "-jar", "app.jar"]
+# Stage 2 — Serve using nginx
+FROM nginx:stable-alpine
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
