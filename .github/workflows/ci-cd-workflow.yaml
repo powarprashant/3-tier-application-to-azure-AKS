@@ -23,7 +23,7 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # Set Image Tag
+    # Generate Image Tag
     - name: Set Image Tag
       id: tag
       run: echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
@@ -35,14 +35,15 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # Install Trivy (FIXED — official installer)
+    # Install Trivy (Stable APT method)
     - name: Install Trivy
       run: |
         sudo apt-get update -y
-        sudo apt-get install -y wget
-        wget https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh
-        chmod +x install.sh
-        sudo ./install.sh
+        sudo apt-get install wget apt-transport-https gnupg lsb-release -y
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo tee /etc/apt/trusted.gpg.d/trivy.asc
+        echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update -y
+        sudo apt-get install trivy -y
 
     # Scan Backend Dockerfile
     - name: Scan Backend Dockerfile
@@ -98,7 +99,7 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    # Fetch AKS Credentials
+    # Connect to AKS
     - name: Get AKS Credentials
       run: |
         az aks get-credentials \
@@ -110,7 +111,7 @@ jobs:
     - name: Install Helm
       uses: azure/setup-helm@v4
 
-    # Execute Deployment Script
+    # Run Deployment Script
     - name: Run Deployment Script
       env:
         DOCKER_REPO_BACKEND: ${{ secrets.DOCKER_REPO_BACKEND }}
