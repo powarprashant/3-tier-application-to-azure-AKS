@@ -72,12 +72,15 @@ jobs:
     - name: Scan Backend Dockerfile
       run: trivy config ./backend
 
-    - name: Build Backend Image
+    - name: Build Backend Image (Buildx)
       run: |
-        docker build \
+        docker buildx build \
+          --builder default \
           --cache-from=type=local,src=/home/runner/.buildx-cache \
           --cache-to=type=local,dest=/home/runner/.buildx-cache,mode=max \
-          -t ${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }} ./backend
+          --tag ${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }} \
+          --load \
+          ./backend
 
     - name: Scan Backend Image
       run: trivy image --exit-code 0 --severity HIGH,CRITICAL \
@@ -92,12 +95,15 @@ jobs:
     - name: Scan Frontend Dockerfile
       run: trivy config ./frontend
 
-    - name: Build Frontend Image
+    - name: Build Frontend Image (Buildx)
       run: |
-        docker build \
+        docker buildx build \
+          --builder default \
           --cache-from=type=local,src=/home/runner/.buildx-cache \
           --cache-to=type=local,dest=/home/runner/.buildx-cache,mode=max \
-          -t ${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }} ./frontend
+          --tag ${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }} \
+          --load \
+          ./frontend
 
     - name: Scan Frontend Image
       run: trivy image --exit-code 0 --severity HIGH,CRITICAL \
