@@ -1,0 +1,118 @@
+name: CI-CD-AKS
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  id-token: write     # Required for Azure OIDC
+  contents: read      # Required for repo checkout
+
+jobs:
+
+  # ============================================================
+  # CI: BUILD, SCAN, PUSH IMAGES
+  # ============================================================
+  build_scan_push:
+    runs-on: ubuntu-latest
+
+    outputs:
+      image_tag: ${{ steps.tag.outputs.sha }}
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # Generate Docker image tag
+    - name: Set Image Tag
+      id: tag
+      run: echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+    # Login to DockerHub
+    - name: Login to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # Install Trivy
+    - name: Install Trivy
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install wget -y
+        wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_Linux-64bit.tar.gz
+        tar -xzf trivy_Linux-64bit.tar.gz
+        sudo mv trivy /usr/local/bin/
+
+    # Scan Dockerfile (backend)
+    - name: Scan Backend Dockerfile
+      run: trivy config ./backend
+
+    # Build Backend Image
+    - name: Build Backend Image
+      run: docker build -t ${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }} ./backend
+
+    # Scan Backend Image
+    - name: Scan Backend Image
+      run: trivy image --exit-code 0 --severity HIGH,CRITICAL \
+           ${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }}
+
+    # Push Backend Image
+    - name: Push Backend Image
+      run: docker push ${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }}
+
+    # Scan Dockerfile (frontend)
+    - name: Scan Frontend Dockerfile
+      run: trivy config ./frontend
+
+    # Build Frontend Image
+    - name: Build Frontend Image
+      run: docker build -t ${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }} ./frontend
+
+    # Scan Frontend Image
+    - name: Scan Frontend Image
+      run: trivy image --exit-code 0 --severity HIGH,CRITICAL \
+           ${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }}
+
+    # Push Frontend Image
+    - name: Push Frontend Image
+      run: docker push ${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }}
+
+
+  # ============================================================
+  # CD: DEPLOY TO AKS
+  # ============================================================
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_scan_push
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    # Azure Login (OIDC)
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    # Connect to AKS
+    - name: Get AKS Credentials
+      run: |
+        az aks get-credentials \
+          --resource-group ${{ secrets.AKS_RESOURCE_GROUP }} \
+          --name ${{ secrets.AKS_CLUSTER_NAME }} \
+          --overwrite-existing
+
+    # Install Helm
+    - name: Install Helm
+      uses: azure/setup-helm@v4
+
+    # Deploy using script
+    - name: Run Deployment Script
+      env:
+        DOCKER_REPO_BACKEND: ${{ secrets.DOCKER_REPO_BACKEND }}
+        DOCKER_REPO_FRONTEND: ${{ secrets.DOCKER_REPO_FRONTEND }}
+      run: bash scripts/deploy.sh "${{ needs.build_scan_push.outputs.image_tag }}"
