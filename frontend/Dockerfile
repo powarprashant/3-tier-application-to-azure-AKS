@@ -1,19 +1,29 @@
-# -------- STAGE 1: Build --------
-FROM node:22-alpine AS builder
-
+# ===========================
+# STAGE 1 — Build Application
+# ===========================
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
+
+# Copy pom.xml first and download dependencies
+COPY pom.xml .
+RUN mvn -q dependency:go-offline
+
+# Copy source code
+COPY src ./src
+
+# Build the application
+RUN mvn clean package -DskipTests
 
 
-# -------- STAGE 2: Serve --------
-FROM nginx:alpine AS production
+# ===========================
+# STAGE 2 — Run Application
+# ===========================
+FROM eclipse-temurin:21-jdk
+WORKDIR /app
 
-RUN rm -rf /usr/share/nginx/html/*
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy the built jar file
+COPY --from=build /app/target/*.jar app.jar
 
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 8080
+
+CMD ["java", "-jar", "app.jar"]
