@@ -36,25 +36,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # -------------------------
-    # ENABLE DOCKER BUILDX CACHE
-    # -------------------------
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      with:
-        driver: docker-container
-
-    - name: Cache Docker layers
-      uses: actions/cache@v3
-      with:
-        path: /home/runner/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
-
-    # -------------------------
-    # INSTALL TRIVY
-    # -------------------------
+    # Install Trivy
     - name: Install Trivy
       run: |
         sudo apt-get update -y
@@ -72,15 +54,9 @@ jobs:
     - name: Scan Backend Dockerfile
       run: trivy config ./backend
 
-    - name: Build Backend Image (Buildx)
+    - name: Build Backend Image
       run: |
-        docker buildx build \
-          --builder default \
-          --cache-from=type=local,src=/home/runner/.buildx-cache \
-          --cache-to=type=local,dest=/home/runner/.buildx-cache,mode=max \
-          --tag ${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }} \
-          --load \
-          ./backend
+        docker build -t ${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }} ./backend
 
     - name: Scan Backend Image
       run: trivy image --exit-code 0 --severity HIGH,CRITICAL \
@@ -95,15 +71,9 @@ jobs:
     - name: Scan Frontend Dockerfile
       run: trivy config ./frontend
 
-    - name: Build Frontend Image (Buildx)
+    - name: Build Frontend Image
       run: |
-        docker buildx build \
-          --builder default \
-          --cache-from=type=local,src=/home/runner/.buildx-cache \
-          --cache-to=type=local,dest=/home/runner/.buildx-cache,mode=max \
-          --tag ${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }} \
-          --load \
-          ./frontend
+        docker build -t ${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }} ./frontend
 
     - name: Scan Frontend Image
       run: trivy image --exit-code 0 --severity HIGH,CRITICAL \
