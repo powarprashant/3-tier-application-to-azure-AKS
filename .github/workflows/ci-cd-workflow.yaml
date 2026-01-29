@@ -57,9 +57,7 @@ jobs:
     - name: Build Backend Image
       run: docker build -t "${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }}" ./backend
 
-    - name: Scan Backend Image
-      run: trivy image --exit-code 0 --severity HIGH,CRITICAL \
-        "${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }}"
+
 
     - name: Push Backend Image
       run: docker push "${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }}"
@@ -73,9 +71,6 @@ jobs:
     - name: Build Frontend Image
       run: docker build -t "${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }}" ./frontend
 
-    - name: Scan Frontend Image
-      run: trivy image --exit-code 0 --severity HIGH,CRITICAL \
-        "${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }}"
 
     - name: Push Frontend Image
       run: docker push "${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }}"
