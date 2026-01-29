@@ -35,14 +35,15 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # Install Trivy
-    - name: Install Trivy
+    # Install Trivy (correct + stable version)
+    - name: Install Trivy (apt repository)
       run: |
         sudo apt-get update -y
-        sudo apt-get install wget -y
-        wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_Linux-64bit.tar.gz
-        tar -xzf trivy_Linux-64bit.tar.gz
-        sudo mv trivy /usr/local/bin/
+        sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo deb https://aquasecurity.github.io/trivy-repo/deb / | sudo tee /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update -y
+        sudo apt-get install -y trivy
 
     # Scan Dockerfile (backend)
     - name: Scan Backend Dockerfile
@@ -110,7 +111,7 @@ jobs:
     - name: Install Helm
       uses: azure/setup-helm@v4
 
-    # Deploy using script
+    # Run deploy script
     - name: Run Deployment Script
       env:
         DOCKER_REPO_BACKEND: ${{ secrets.DOCKER_REPO_BACKEND }}
