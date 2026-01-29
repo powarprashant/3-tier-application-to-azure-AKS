@@ -34,4 +34,7 @@ jobs:
 
     # Run Helm & Bash deployment script
     - name: Run Deployment Script
+      env:
+        DOCKER_REPO_BACKEND: ${{ secrets.DOCKER_REPO_BACKEND }}
+        DOCKER_REPO_FRONTEND: ${{ secrets.DOCKER_REPO_FRONTEND }}
       run: bash scripts/deploy.sh "${{ github.event.workflow_run.head_sha }}"
