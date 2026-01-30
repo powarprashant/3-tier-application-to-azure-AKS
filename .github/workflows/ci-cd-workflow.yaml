@@ -57,7 +57,8 @@ jobs:
     - name: Build Backend Image
       run: docker build -t "${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }}" ./backend
 
-
+    - name: Scan Backend Image
+      run: trivy image --exit-code 0 --severity HIGH,CRITICAL "${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }}"
 
     - name: Push Backend Image
       run: docker push "${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }}"
@@ -71,6 +72,8 @@ jobs:
     - name: Build Frontend Image
       run: docker build -t "${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }}" ./frontend
 
+    - name: Scan Frontend Image
+      run: trivy image --exit-code 0 --severity HIGH,CRITICAL "${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }}"
 
     - name: Push Frontend Image
       run: docker push "${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }}"
@@ -108,12 +111,18 @@ jobs:
     - name: Install Helm
       uses: azure/setup-helm@v4
 
+    # IMPORTANT FIX → Ensure we run from repo root where helm/ folder exists
+    - name: Set Correct Working Directory
+      run: |
+        echo "Current directory:"
+        pwd
+        echo "Contents:"
+        ls -R .
+
     # Deploy using Script
     - name: Run Deployment Script
-      working-directory: ${{ github.workspace }}
+      working-directory: ${{ github.workspace }}/3-tier-application-to-azure-AKS
       env:
         DOCKER_REPO_BACKEND: ${{ secrets.DOCKER_REPO_BACKEND }}
         DOCKER_REPO_FRONTEND: ${{ secrets.DOCKER_REPO_FRONTEND }}
       run: bash scripts/deploy.sh "${{ needs.build_scan_push.outputs.image_tag }}"
-
-    
