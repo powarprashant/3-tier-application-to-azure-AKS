@@ -19,7 +19,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/gym")
+@RequestMapping("/api/gym")  // ✅ UPDATED: Added /api prefix
 @RequiredArgsConstructor
 public class RecordsController {
 
@@ -33,7 +33,9 @@ public class RecordsController {
     @PostMapping("/records")
     public ResponseEntity<GymRecordDto> createGymRecord(@Valid @RequestBody GymRecordDto recordDto) {
         GymRecordDto createdRecord = recordsService.createGymRecords(recordDto);
-        return ResponseEntity.created(URI.create("/gym/records/" + recordDto.getId())).body(createdRecord);
+        return ResponseEntity
+                .created(URI.create("/api/gym/records/" + recordDto.getId())) // ✅ UPDATED PATH
+                .body(createdRecord);
     }
 
     @GetMapping("/records/{id}")
