@@ -1,0 +1,10 @@
+{
+  "name": "github-aks-oidc-cred",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "subject": "repo:powarprashant/3-tier-application-to-azure-AKS:ref:refs/heads/main",
+  "description": "GitHub Actions OIDC for AKS Deployment",
+  "audiences": [
+    "api://AzureADTokenExchange"
+  ]
+}
+
