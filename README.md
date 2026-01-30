@@ -69,5 +69,5 @@ Once configured, the usual flow is:
 ```bash
 terraform init
 terraform plan
-terraform apply
+terraform apply   
 
