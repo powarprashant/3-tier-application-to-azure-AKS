@@ -29,7 +29,7 @@ jobs:
       id: tag
       run: echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
-    # Login to DockerHub
+    # DockerHub Login
     - name: Login to DockerHub
       uses: docker/login-action@v3
       with:
@@ -48,9 +48,7 @@ jobs:
         sudo apt-get update -y
         sudo apt-get install trivy -y
 
-    # -------------------------
-    # BACKEND SCAN + BUILD + PUSH
-    # -------------------------
+    # Backend
     - name: Scan Backend Dockerfile
       run: trivy config ./backend
 
@@ -63,9 +61,7 @@ jobs:
     - name: Push Backend Image
       run: docker push "${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }}"
 
-    # -------------------------
-    # FRONTEND SCAN + BUILD + PUSH
-    # -------------------------
+    # Frontend
     - name: Scan Frontend Dockerfile
       run: trivy config ./frontend
 
@@ -91,7 +87,7 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    # Azure Login (OIDC)
+    # Azure Login using OIDC
     - name: Azure Login
       uses: azure/login@v2
       with:
@@ -99,7 +95,7 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    # Connect to AKS
+    # Get AKS Credentials
     - name: Get AKS Credentials
       run: |
         az aks get-credentials \
@@ -111,17 +107,14 @@ jobs:
     - name: Install Helm
       uses: azure/setup-helm@v4
 
-    # IMPORTANT FIX → Ensure we run from repo root where helm/ folder exists
-    - name: Set Correct Working Directory
+    # Debug Directory (optional, but safe)
+    - name: Show Directory
       run: |
-        echo "Current directory:"
         pwd
-        echo "Contents:"
         ls -R .
 
-    # Deploy using Script
+    # DEPLOY — NO WORKING DIRECTORY NEEDED!
     - name: Run Deployment Script
-      working-directory: ${{ github.workspace }}/3-tier-application-to-azure-AKS
       env:
         DOCKER_REPO_BACKEND: ${{ secrets.DOCKER_REPO_BACKEND }}
         DOCKER_REPO_FRONTEND: ${{ secrets.DOCKER_REPO_FRONTEND }}
