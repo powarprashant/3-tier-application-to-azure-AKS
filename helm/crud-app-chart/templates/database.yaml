@@ -53,9 +53,13 @@ spec:
               key: DB_NAME
         - name: POSTGRES_HOST_AUTH_METHOD
           value: trust
+
+        
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
+          subPath: postgres-data   
+
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
@@ -74,3 +78,4 @@ spec:
   - port: 5432
     targetPort: 5432
   type: ClusterIP
+
