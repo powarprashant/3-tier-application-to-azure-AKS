@@ -1,9 +1,17 @@
 replicaCount: 1
+
 frontend:
   image:
     repository: jamiekariuki/crud-app
     tag: "frontend-16105052287"
+
 backend:
   image:
     repository: jamiekariuki/crud-app
     tag: "backend-16105052289"
+
+postgres:
+  image: postgres:14
+  storage:
+    size: 5Gi
+    storageClass: managed-csi

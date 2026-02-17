@@ -1,7 +1,23 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.postgres.storage.size }}
+  storageClassName: {{ .Values.postgres.storage.storageClass }}
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
+  namespace: {{ .Release.Namespace }}
   labels:
     app: postgres
 spec:
@@ -16,7 +32,7 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: postgres:14
+        image: {{ .Values.postgres.image }}
         ports:
         - containerPort: 5432
         env:
@@ -42,13 +58,15 @@ spec:
           mountPath: /var/lib/postgresql/data
       volumes:
       - name: postgres-storage
-        emptyDir: {} # use PVC for production yes
----
+        persistentVolumeClaim:
+          claimName: postgres-pvc
 
+---
 apiVersion: v1
 kind: Service
 metadata:
   name: postgres
+  namespace: {{ .Release.Namespace }}
 spec:
   selector:
     app: postgres
