@@ -31,8 +31,6 @@ spec:
         app: postgres
     spec:
       
-      nodeSelector:
-        "kubernetes.io/os": aks-system-52936882-vmss000000
   
       containers:
       - name: postgres
